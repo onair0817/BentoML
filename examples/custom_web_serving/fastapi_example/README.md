@@ -29,7 +29,6 @@ $ curl -X POST -H "content-type: application/json" --data '{"sepal_len": 7.2, "s
 ```
 
 Now for FastAPI integration endpoints:
-
 Test the `/predict_fastapi` endpoint:
 
 ```bash
