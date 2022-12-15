@@ -29,6 +29,7 @@ from .bentos import get
 from .bentos import list  # pylint: disable=W0622
 from .bentos import pull
 from .bentos import push
+from .bentos import serve
 from .bentos import delete
 from .bentos import export_bento
 from .bentos import import_bento
@@ -79,6 +80,7 @@ if TYPE_CHECKING:
     from . import models
     from . import metrics  # Prometheus metrics client
     from . import container  # Container API
+    from . import client  # Client API
 
     # isort: on
 else:
@@ -122,6 +124,7 @@ else:
     models = _LazyLoader("bentoml.models", globals(), "bentoml.models")
     metrics = _LazyLoader("bentoml.metrics", globals(), "bentoml.metrics")
     container = _LazyLoader("bentoml.container", globals(), "bentoml.container")
+    client = _LazyLoader("bentoml.client", globals(), "bentoml.client")
 
     del _LazyLoader
 
@@ -133,6 +136,7 @@ __all__ = [
     "models",
     "metrics",
     "container",
+    "client",
     "io",
     "Tag",
     "Model",
@@ -148,6 +152,7 @@ __all__ = [
     "load",
     "push",
     "pull",
+    "serve",
     "Bento",
     # Framework specific modules
     "catboost",

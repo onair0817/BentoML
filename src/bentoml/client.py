@@ -65,6 +65,23 @@ class Client(ABC):
         raise NotImplementedError
 
     @staticmethod
+    def wait_until_server_is_ready(host: str, port: int, timeout: int) -> None:
+        import time
+
+        time_end = time.time() + timeout
+        status = None
+        while status != 200:
+            try:
+                conn = HTTPConnection(host, port)
+                conn.request("GET", "/readyz")
+                status = conn.getresponse().status
+            except ConnectionRefusedError:
+                print("Connection refused. Trying again...")
+            if time.time() > time_end:
+                raise TimeoutError("The server took too long to get ready")
+            time.sleep(1)
+
+    @staticmethod
     def from_url(server_url: str) -> Client:
         server_url = server_url if "://" in server_url else "http://" + server_url
         url_parts = urlparse(server_url)
@@ -94,18 +111,26 @@ class Client(ABC):
                         raise BentoMLException(
                             f"Malformed BentoML spec received from BentoML server {server_url}"
                         )
-                    dummy_service.apis[meth_spec["x-bentoml-name"]] = InferenceAPI(
-                        None,
-                        bentoml.io.from_spec(
-                            meth_spec["requestBody"]["x-bentoml-io-descriptor"]
-                        ),
-                        bentoml.io.from_spec(
-                            meth_spec["responses"]["200"]["x-bentoml-io-descriptor"]
-                        ),
-                        name=meth_spec["x-bentoml-name"],
-                        doc=meth_spec["description"],
-                        route=route.lstrip("/"),
-                    )
+                    try:
+                        api = InferenceAPI(
+                            None,
+                            bentoml.io.from_spec(
+                                meth_spec["requestBody"]["x-bentoml-io-descriptor"]
+                            ),
+                            bentoml.io.from_spec(
+                                meth_spec["responses"]["200"]["x-bentoml-io-descriptor"]
+                            ),
+                            name=meth_spec["x-bentoml-name"],
+                            doc=meth_spec["description"],
+                            route=route.lstrip("/"),
+                        )
+                        dummy_service.apis[meth_spec["x-bentoml-name"]] = api
+                    except BentoMLException as e:
+                        logger.error(
+                            "Failed to instantiate client for API %s: ",
+                            meth_spec["x-bentoml-name"],
+                            e,
+                        )
 
         res = HTTPClient(dummy_service, server_url)
         res.server_url = server_url
